@@ -3,7 +3,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score
+from sciopt import BayesSearchCV
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
@@ -19,26 +20,31 @@ def model_eval(y_test, predictions):
   accuracy = accuracy_score(y_test, predictions)
   precision = precision_score(y_test, predictions)
   recall = recall_score(y_test, predictions)
+  f1 = f1_score(y_test, predictions)
 
-  return conf_matrix, accuracy, precision, recall
+  return conf_matrix, accuracy, precision, recall, f1
 
 scaler = StandardScaler()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 scaled_X_trained = scaler.fit_transform(X_train)
 scaled_X_test = scaler.transform(X_test)
 
-"""svc_param_grid = [
+#SupportVectormachineClassifier
+svc_param_grid = [
     {
         'C': (1e-6, 1e+6, 'log-uniform'),
         'gamma': (1e-6, 1e+1, 'log-uniform'),
         'degree': (1, 8),  # integer valued parameter
         'kernel': ['linear', 'poly', 'rbf'],  # categorical parameter
     }
-]"""
+]
 
-svc_clf = SVC()
-svc_clf.fit(scaled_X_trained, y_train)
-svc_clf_pred = svc_clf.predict(scaled_X_test)
+svc = SVC()
+bayes_op = BayesSearchCV(svc, svc_param_grid, cv=3, scoring="accuracy", return_train_score=True)
+bayes_op.fit(scaled_X_trained, y_train)
+svc_clf = bayes_op.best_estimator_
+svc_pred = (svc_clf.predict(scaled_X_test)
+model_eval(y_test, svc_pred)
 
 #RandomForestClasifier
 param_grid = [
